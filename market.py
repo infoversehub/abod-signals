@@ -6,28 +6,27 @@ API_KEY = os.getenv("FINNHUB_API_KEY")
 
 def get_price(symbol):
 
-    url = "https://finnhub.io/api/v1/quote"
+    url = (
+        f"https://finnhub.io/api/v1/quote"
+        f"?symbol={symbol}"
+        f"&token={API_KEY}"
+    )
 
-    params = {
-        "symbol": symbol,
-        "token": API_KEY
-    }
+    response = requests.get(url, timeout=10)
 
-    try:
-        response = requests.get(url, params=params, timeout=10)
-
-        if response.status_code != 200:
-            return None
-
-        data = response.json()
-
-        return {
-            "price": data["c"],
-            "high": data["h"],
-            "low": data["l"],
-            "open": data["o"],
-            "previous_close": data["pc"]
-        }
-
-    except Exception:
+    if response.status_code != 200:
         return None
+
+    data = response.json()
+
+    if "c" not in data:
+        return None
+
+    return {
+        "symbol": symbol,
+        "price": data["c"],
+        "high": data["h"],
+        "low": data["l"],
+        "open": data["o"],
+        "previous_close": data["pc"],
+    }
