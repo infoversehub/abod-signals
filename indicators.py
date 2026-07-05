@@ -1,29 +1,70 @@
-def ema(values, period):
-
-    if len(values) < period:
-        return None
-
-    multiplier = 2 / (period + 1)
-
-    ema_value = sum(values[:period]) / period
-
-    for price in values[period:]:
-        ema_value = (price - ema_value) * multiplier + ema_value
-
-    return round(ema_value, 5)
+import ta
 
 
-def sma(values, period):
+def add_indicators(df):
 
-    if len(values) < period:
-        return None
+    # EMA
+    df["EMA20"] = ta.trend.ema_indicator(
+        close=df["close"],
+        window=20
+    )
 
-    return round(sum(values[-period:]) / period, 5)
+    df["EMA50"] = ta.trend.ema_indicator(
+        close=df["close"],
+        window=50
+    )
 
+    df["EMA200"] = ta.trend.ema_indicator(
+        close=df["close"],
+        window=200
+    )
 
-def price_change(open_price, close_price):
+    # RSI
+    df["RSI"] = ta.momentum.rsi(
+        close=df["close"],
+        window=14
+    )
 
-    if open_price == 0:
-        return 0
+    # MACD
+    df["MACD"] = ta.trend.macd(
+        close=df["close"]
+    )
 
-    return round(((close_price - open_price) / open_price) * 100, 2)
+    df["MACD_SIGNAL"] = ta.trend.macd_signal(
+        close=df["close"]
+    )
+
+    df["MACD_HIST"] = ta.trend.macd_diff(
+        close=df["close"]
+    )
+
+    # ATR
+    df["ATR"] = ta.volatility.average_true_range(
+        high=df["high"],
+        low=df["low"],
+        close=df["close"],
+        window=14
+    )
+
+    # Bollinger Bands
+    df["BB_UPPER"] = ta.volatility.bollinger_hband(
+        close=df["close"]
+    )
+
+    df["BB_MIDDLE"] = ta.volatility.bollinger_mavg(
+        close=df["close"]
+    )
+
+    df["BB_LOWER"] = ta.volatility.bollinger_lband(
+        close=df["close"]
+    )
+
+    # ADX
+    df["ADX"] = ta.trend.adx(
+        high=df["high"],
+        low=df["low"],
+        close=df["close"],
+        window=14
+    )
+
+    return df
