@@ -1,26 +1,29 @@
-import pandas as pd
-import ta
+def ema(values, period):
+
+    if len(values) < period:
+        return None
+
+    multiplier = 2 / (period + 1)
+
+    ema_value = sum(values[:period]) / period
+
+    for price in values[period:]:
+        ema_value = (price - ema_value) * multiplier + ema_value
+
+    return round(ema_value, 5)
 
 
-def add_indicators(df):
+def sma(values, period):
 
-    df["EMA20"] = ta.trend.ema_indicator(df["close"], window=20)
+    if len(values) < period:
+        return None
 
-    df["EMA50"] = ta.trend.ema_indicator(df["close"], window=50)
+    return round(sum(values[-period:]) / period, 5)
 
-    df["EMA200"] = ta.trend.ema_indicator(df["close"], window=200)
 
-    df["RSI"] = ta.momentum.rsi(df["close"], window=14)
+def price_change(open_price, close_price):
 
-    df["MACD"] = ta.trend.macd(df["close"])
+    if open_price == 0:
+        return 0
 
-    df["MACD_SIGNAL"] = ta.trend.macd_signal(df["close"])
-
-    df["ATR"] = ta.volatility.average_true_range(
-        df["high"],
-        df["low"],
-        df["close"],
-        window=14
-    )
-
-    return df
+    return round(((close_price - open_price) / open_price) * 100, 2)
