@@ -1,4 +1,3 @@
-import os
 import time
 
 from strategy import generate_signal
@@ -39,19 +38,19 @@ def analyze_market():
 
 {best_signal["direction"]}
 
-📈 الزوج:
+📈 Pair:
 {best_signal["symbol"]}
 
-🎯 الثقة:
+🎯 Confidence:
 {best_signal["confidence"]}%
 
-💰 سعر الدخول:
+💰 Entry:
 {best_signal["entry"]}
 
-⏳ مدة الصفقة:
+⏳ Expiry:
 {best_signal["expiry"]}
 
-📋 الأسباب:
+📋 Reasons:
 """
 
     for reason in best_signal["reasons"]:
@@ -69,11 +68,9 @@ def main():
     while True:
 
         try:
-
             analyze_market()
 
         except Exception as e:
-
             print(e)
 
         time.sleep(60)
