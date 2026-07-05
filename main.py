@@ -4,10 +4,11 @@ from strategy import generate_signal
 from telegram_bot import send_message
 
 SYMBOLS = [
-    "OANDA:EUR_USD",
-    "OANDA:GBP_USD",
-    "OANDA:USD_JPY",
-    "OANDA:AUD_USD",
+    "AED/CNY OTC",
+    "AUD/CHF OTC",
+    "AUD/USD OTC",
+    "CAD/CHF OTC",
+    "EUR/USD OTC",
 ]
 
 
