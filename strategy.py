@@ -1,69 +1,117 @@
-from market import get_price
+from market import get_candles
+from indicators import add_indicators
 
 
 def generate_signal(symbol):
 
-    data = get_price(symbol)
+    df = get_candles(symbol)
 
-    if data is None:
+    if df is None or len(df) < 200:
         return None
 
-    price = data["price"]
-    open_price = data["open"]
-    previous_close = data["previous_close"]
+    df = add_indicators(df)
+
+    last = df.iloc[-1]
 
     score = 0
     reasons = []
+    direction = None
 
-    # اتجاه السعر مقارنة بالافتتاح
-    if price > open_price:
+    # =========================
+    # Trend (EMA)
+    # =========================
+
+    if last["EMA20"] > last["EMA50"] > last["EMA200"]:
         direction = "🟢 CALL"
-        score += 30
-        reasons.append("Bullish Momentum")
-    else:
-        direction = "🔴 PUT"
-        score += 30
-        reasons.append("Bearish Momentum")
-
-    # استمرار الحركة مقارنة بإغلاق اليوم السابق
-    if direction == "🟢 CALL":
-        if price > previous_close:
-            score += 20
-            reasons.append("Above Previous Close")
-
-    if direction == "🔴 PUT":
-        if price < previous_close:
-            score += 20
-            reasons.append("Below Previous Close")
-
-    # قوة الحركة
-    movement = abs(price - open_price)
-
-    if movement >= 0.00020:
         score += 20
-        reasons.append("Strong Move")
+        reasons.append("Strong Up Trend")
 
-    # الابتعاد عن أعلى وأدنى السعر
+    elif last["EMA20"] < last["EMA50"] < last["EMA200"]:
+        direction = "🔴 PUT"
+        score += 20
+        reasons.append("Strong Down Trend")
+
+    else:
+        return None
+
+    # =========================
+    # RSI
+    # =========================
+
     if direction == "🟢 CALL":
-        if (data["high"] - price) > 0.00010:
+        if 40 <= last["RSI"] <= 65:
             score += 15
-            reasons.append("Space To Resistance")
+            reasons.append("Healthy RSI")
 
     if direction == "🔴 PUT":
-        if (price - data["low"]) > 0.00010:
+        if 35 <= last["RSI"] <= 60:
             score += 15
-            reasons.append("Space To Support")
+            reasons.append("Healthy RSI")
+
+    # =========================
+    # MACD
+    # =========================
+
+    if direction == "🟢 CALL":
+        if last["MACD"] > last["MACD_SIGNAL"]:
+            score += 20
+            reasons.append("MACD Bullish")
+
+    if direction == "🔴 PUT":
+        if last["MACD"] < last["MACD_SIGNAL"]:
+            score += 20
+            reasons.append("MACD Bearish")
+
+    # =========================
+    # ATR
+    # =========================
+
+    if last["ATR"] > 0:
+        score += 10
+        reasons.append("Market Moving")
+
+    # =========================
+    # ADX
+    # =========================
+
+    if last["ADX"] >= 25:
+        score += 15
+        reasons.append("Strong Trend")
+
+    # =========================
+    # Bollinger Bands
+    # =========================
+
+    if direction == "🟢 CALL":
+        if last["close"] > last["BB_MIDDLE"]:
+            score += 10
+            reasons.append("Above BB Middle")
+
+    if direction == "🔴 PUT":
+        if last["close"] < last["BB_MIDDLE"]:
+            score += 10
+            reasons.append("Below BB Middle")
+
+    # =========================
+    # Candle Strength
+    # =========================
+
+    candle = abs(last["close"] - last["open"])
+
+    if candle > (last["ATR"] * 0.5):
+        score += 10
+        reasons.append("Strong Candle")
 
     confidence = min(score, 100)
 
-    if confidence < 70:
+    if confidence < 85:
         return None
 
     return {
         "symbol": symbol,
         "direction": direction,
         "confidence": confidence,
-        "entry": round(price, 5),
+        "entry": round(last["close"], 5),
         "expiry": "1 Minute",
         "reasons": reasons
     }
