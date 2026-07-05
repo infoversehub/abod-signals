@@ -1,56 +1,82 @@
 import os
+import time
 
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    ContextTypes,
-)
+from strategy import generate_signal
+from telegram_bot import send_message
 
-from market import get_price
-
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🤖 Abod Signals\n\n"
-        "الأوامر:\n"
-        "/signal"
-    )
+SYMBOLS = [
+    "OANDA:EUR_USD",
+    "OANDA:GBP_USD",
+    "OANDA:USD_JPY",
+    "OANDA:AUD_USD",
+]
 
 
-async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def analyze_market():
 
-    data = get_price("OANDA:EUR_USD")
+    best_signal = None
 
-    if data is None:
-        await update.message.reply_text("❌ فشل الاتصال بالسوق.")
+    for symbol in SYMBOLS:
+
+        signal = generate_signal(symbol)
+
+        if signal is None:
+            continue
+
+        if best_signal is None:
+            best_signal = signal
+            continue
+
+        if signal["confidence"] > best_signal["confidence"]:
+            best_signal = signal
+
+    if best_signal is None:
+        print("No Signal")
         return
 
-    await update.message.reply_text(
-        f"""
-📊 EUR/USD
+    message = f"""
+🚀 Abod Signals
 
-السعر الحالي: {data['price']}
-أعلى سعر: {data['high']}
-أقل سعر: {data['low']}
-الافتتاح: {data['open']}
-إغلاق أمس: {data['previous_close']}
+{best_signal["direction"]}
+
+📈 الزوج:
+{best_signal["symbol"]}
+
+🎯 الثقة:
+{best_signal["confidence"]}%
+
+💰 سعر الدخول:
+{best_signal["entry"]}
+
+⏳ مدة الصفقة:
+{best_signal["expiry"]}
+
+📋 الأسباب:
 """
-    )
+
+    for reason in best_signal["reasons"]:
+        message += f"\n✅ {reason}"
+
+    send_message(message)
+
+    print("Signal Sent")
 
 
 def main():
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    print("Abod Signals Started")
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("signal", signal))
+    while True:
 
-    print("Abod Signals Running...")
+        try:
 
-    app.run_polling()
+            analyze_market()
+
+        except Exception as e:
+
+            print(e)
+
+        time.sleep(60)
 
 
 if __name__ == "__main__":
